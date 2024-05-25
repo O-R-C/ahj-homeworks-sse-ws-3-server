@@ -14,32 +14,35 @@ const router = new Router()
 router.get('/report', async (ctx) => {
   streamEvents(ctx.req, ctx.res, {
     async fetch(lastEventId) {
-      console.log('🚀 ~ lastEventId:', lastEventId)
+      const storage = gameReport.get()
+      const index = storage.findIndex((item) => item.id === lastEventId)
 
-      // const storage = gameReport.get()
-      // console.log('🚀 ~ lastEventId:', lastEventId)
-      // console.log('🚀 ~ storage:', storage)
-
-      // if (!lastEventId) {
-      //   return storage
-      // }
-
-      // const index = storage.findIndex((item) => item.id === lastEventId)
-      // console.log('🚀 ~ index:', index)
-
-      // return storage.slice(index + 1)
-
-      return []
+      return storage.slice(index + 1).map((item) => {
+        return {
+          id: item.id,
+          event: 'message',
+          data: JSON.stringify(item),
+        }
+      })
     },
     async stream(sse) {
-      gameReport.listen((item) => {
+      const sendItem = (sse, item) => {
         sse.sendEvent({
           id: item.id,
           event: 'message',
           data: JSON.stringify(item),
         })
-      })
-      return () => {}
+      }
+
+      const listener = (item) => {
+        sendItem(sse, item)
+      }
+
+      gameReport.get().forEach((item) => sendItem(sse, item))
+      gameReport.listen(listener)
+      return () => {
+        gameReport.deleteListener(listener)
+      }
     },
   })
   ctx.respond = false

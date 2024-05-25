@@ -11,6 +11,10 @@ class GameReport extends ArrayStorage {
     super.push(item)
     this.#listeners.forEach((listener) => listener(item))
   }
+
+  deleteListener(listener) {
+    this.#listeners = this.#listeners.filter((item) => item !== listener)
+  }
 }
 
 module.exports = GameReport
